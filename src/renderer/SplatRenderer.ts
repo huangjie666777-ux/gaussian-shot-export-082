@@ -164,8 +164,25 @@ export class SplatRenderer {
     this.lastCssWidth = width;
     this.lastCssHeight = height;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const drawingWidth = Math.max(1, Math.round(width * dpr));
-    const drawingHeight = Math.max(1, Math.round(height * dpr));
+    this.applySize(
+      gl,
+      Math.max(1, Math.round(width * dpr)),
+      Math.max(1, Math.round(height * dpr)),
+    );
+  }
+
+  /** Set an exact drawing-buffer size at dpr 1 (fixed-size offline export). */
+  resizePixels(width: number, height: number): void {
+    const gl = this.gl;
+    if (!gl || this.contextLost) return;
+    this.applySize(gl, Math.max(1, Math.round(width)), Math.max(1, Math.round(height)));
+  }
+
+  private applySize(
+    gl: WebGL2RenderingContext,
+    drawingWidth: number,
+    drawingHeight: number,
+  ): void {
     if (this.canvas.width !== drawingWidth || this.canvas.height !== drawingHeight) {
       this.canvas.width = drawingWidth;
       this.canvas.height = drawingHeight;

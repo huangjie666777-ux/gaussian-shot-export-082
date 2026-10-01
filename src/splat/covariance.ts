@@ -171,11 +171,14 @@ export function projectCovariance(
   const c12 = t10 * w20 + t11 * w21 + t12 * w22;
   const c22 = t20 * w20 + t21 * w21 + t22 * w22;
 
-  // Perspective Jacobian at (tx,ty,tz), focal already in pixels.
+  // Perspective Jacobian at (tx,ty,tz), focal already in pixels. Screen
+  // coordinates are u = fx*tx/d + cx and v = cy - fy*ty/d with d = -tz:
+  //   du/dtx = fx/d,  du/dtz = fx*tx/d^2
+  //   dv/dty = -fy/d, dv/dtz = -fy*ty/d^2.
   const invD = 1 / depth;
   const j00 = params.focalX * invD;
-  const j02 = -params.focalX * tx * invD * invD;
-  const j11 = params.focalY * invD;
+  const j02 = params.focalX * tx * invD * invD;
+  const j11 = -params.focalY * invD;
   const j12 = -params.focalY * ty * invD * invD;
 
   let covA = j00 * c00 * j00 + 2 * j00 * c02 * j02 + j02 * c22 * j02;

@@ -57,6 +57,56 @@ describe('covariance math', () => {
     expect(projectCovariance(cov, [0, 0, 5], 0, identityParams()).visible).toBe(false);
     expect(projectCovariance(cov, [0, 0, -0.05], 0, identityParams()).visible).toBe(false);
   });
+
+  it('uses correct perspective Jacobian signs for off-center splats', () => {
+    // World covariance rotated 45 deg around z: non-zero 01 coupling. After
+    // projection at an off-axis point the cross screen term covB must keep
+    // the sign predicted by the analytic Jacobian (regression guard against
+    // flipped j02/j11 signs).
+    const theta = Math.PI / 4;
+    const q = [Math.cos(theta / 2), 0, 0, Math.sin(theta / 2)];
+    const cov = worldCovariance3(
+      new Float32Array(q),
+      new Float32Array([0.2, 0.05, 0.05]),
+      0,
+      new Float32Array(6),
+    );
+    const params = identityParams({ focalX: 500, focalY: 500 });
+    const p = projectCovariance(cov, [0.5, 0.3, -5], 0, params);
+    expect(p.visible).toBe(true);
+    // Independent numeric reference computed with
+    // u = fx*tx/d + cx, v = cy - fy*ty/d, d = -tz and J = d(screen)/d(cam).
+    const cam = [
+      [cov[0], cov[1], cov[2]],
+      [cov[1], cov[3], cov[4]],
+      [cov[2], cov[4], cov[5]],
+    ];
+    const tx = 0.5;
+    const ty = 0.3;
+    const d = 5;
+    const fx = 500;
+    const fy = 500;
+    const j = [
+      [fx / d, 0, (fx * tx) / (d * d)],
+      [0, -fy / d, (-fy * ty) / (d * d)],
+    ];
+    const screenCov: number[][] = [
+      [0, 0],
+      [0, 0],
+    ];
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 2; col++) {
+        let value = 0;
+        for (let i = 0; i < 3; i++) {
+          for (let k = 0; k < 3; k++) value += j[row][i] * cam[i][k] * j[col][k];
+        }
+        screenCov[row][col] = value;
+      }
+    }
+    expect(p.covA).toBeCloseTo(screenCov[0][0] + 0.3 * 0.3, 4);
+    expect(p.covB).toBeCloseTo(screenCov[0][1], 4);
+    expect(p.covC).toBeCloseTo(screenCov[1][1] + 0.3 * 0.3, 4);
+  });
 });
 
 describe('buildFrame', () => {

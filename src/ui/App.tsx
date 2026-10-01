@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseSplat, SplatParseError, type SplatData } from '../splat/parser';
 import { SplatViewer, type ViewerStats } from '../viewer/SplatViewer';
+import { TimelinePanel } from './TimelinePanel';
 import './app.css';
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
@@ -114,19 +115,22 @@ export function App(): React.JSX.Element {
           </button>
         </div>
       </header>
-      <main className="stage">
-        <canvas ref={canvasRef} className="splat-canvas" />
-        <div className="hud">
-          <div>左键旋转 · 右键平移 · 滚轮缩放</div>
-          <div>
-            {sceneName && <span>场景：{sceneName} · </span>}
-            高斯 {stats.count.toLocaleString()} 个 · 可见 {stats.visible.toLocaleString()} 个
+      <div className="workspace">
+        <main className="stage">
+          <canvas ref={canvasRef} className="splat-canvas" />
+          <div className="hud">
+            <div>左键旋转 · 右键平移 · 滚轮缩放</div>
+            <div>
+              {sceneName && <span>场景：{sceneName} · </span>}
+              高斯 {stats.count.toLocaleString()} 个 · 可见 {stats.visible.toLocaleString()} 个
+            </div>
+            {status === 'loading' && <div className="status loading">正在加载与解析场景…</div>}
+            {status === 'error' && error && <div className="status error">{error}</div>}
+            {status === 'idle' && <div className="status">等待加载场景</div>}
           </div>
-          {status === 'loading' && <div className="status loading">正在加载与解析场景…</div>}
-          {status === 'error' && error && <div className="status error">{error}</div>}
-          {status === 'idle' && <div className="status">等待加载场景</div>}
-        </div>
-      </main>
+        </main>
+        <TimelinePanel viewerRef={viewerRef} />
+      </div>
     </div>
   );
 }
